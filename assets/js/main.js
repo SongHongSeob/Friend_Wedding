@@ -4,8 +4,8 @@ const CONFIG = {
   venue: {
     name: '루클라비더화이트',
     address: '서울 강남구 논현로 742',
-    lat: 37.5184,
-    lng: 127.0298
+    lat: 37.518471,
+    lng: 127.029254
   },
   gallery: {
     count: 12,
@@ -230,6 +230,13 @@ const CalendarWidget = (() => {
     var month = date.getMonth(); // 0-indexed
     var weddingDay = date.getDate();
 
+    var timeHour = date.getHours();
+    var timeMinute = date.getMinutes();
+    var isAfternoon = timeHour >= 12;
+    var displayHour = isAfternoon ? (timeHour === 12 ? 12 : timeHour - 12) : (timeHour === 0 ? 12 : timeHour);
+    var displayMinute = timeMinute < 10 ? '0' + timeMinute : '' + timeMinute;
+    var timeStr = (isAfternoon ? '오후' : '오전') + ' ' + displayHour + ':' + displayMinute;
+
     var firstDay = new Date(year, month, 1).getDay(); // 0=Sun
     var daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -254,7 +261,7 @@ const CalendarWidget = (() => {
       }
 
       if (d === weddingDay) {
-        html += '<td class="calendar-today"><span>' + d + '</span></td>';
+        html += '<td class="calendar-today"><span class="cal-num">' + d + '</span><span class="cal-time">' + timeStr + '</span></td>';
       } else {
         html += '<td>' + d + '</td>';
       }

@@ -422,6 +422,7 @@ a:focus-visible {
   width: 100%;
   border-collapse: collapse;
   text-align: center;
+  table-layout: fixed;
 }
 
 .calendar-widget th {
@@ -444,6 +445,8 @@ a:focus-visible {
   font-size: 0.9rem;
   padding: 0.6rem 0;
   color: var(--color-text-light);
+  vertical-align: top;
+  height: 3rem;
 }
 
 .calendar-widget td:first-child {
@@ -462,16 +465,35 @@ a:focus-visible {
   position: relative;
 }
 
-.calendar-widget td.calendar-today span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.2rem;
-  height: 2.2rem;
-  background-color: var(--color-accent);
+.calendar-widget td.calendar-today .cal-num {
+  display: block;
+  position: relative;
+  z-index: 0;
+  text-align: center;
   color: var(--color-white);
-  border-radius: var(--radius-full);
-  font-weight: 400;
+  font-weight: 600;
+}
+
+.calendar-widget td.calendar-today .cal-num::before {
+  content: '♥';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.2rem;
+  color: var(--color-accent);
+  line-height: 1;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.calendar-widget td.calendar-today .cal-time {
+  display: block;
+  text-align: center;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  margin-top: 0.2rem;
+  letter-spacing: 0.02em;
 }
 
 /* ===== 11. Location ===== */

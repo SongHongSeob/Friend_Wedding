@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ee2826711b4264015800d17421300f05"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>박상우 ♥ 김영희 결혼합니다</title>
@@ -11,7 +12,7 @@
   <meta property="og:title" content="박상우 ♥ 김영희 결혼합니다">
   <meta property="og:description" content="2026년 4월 25일 토요일 오후 2시, 웨딩홀 예시에서 두 사람이 하나가 됩니다.">
   <meta property="og:image" content="assets/images/couple-main.jpg">
-  <meta property="og:url" content="https://username.github.io/friend-wedding/">
+  <meta property="og:url" content="https://songhongseob.github.io/friend-wedding/">
 
   <!-- Preconnect for performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,6 +37,7 @@
           <span class="hero__bride">김영희</span>
         </h1>
         <div class="hero__photo-wrap">
+          <!--
           <img
             src="assets/images/couple-main.jpg"
             alt="박상우와 김영희 커플 사진"
@@ -43,6 +45,7 @@
             width="480"
             height="640"
           >
+          -->
         </div>
       </div>
     </div>
@@ -128,6 +131,7 @@
     <div class="container">
       <h2 class="section__title">갤러리</h2>
       <div class="gallery__grid">
+        <!--
         <img src="assets/images/gallery/photo-01.jpg" alt="웨딩 사진 1" width="400" height="500" loading="lazy" class="gallery__img">
         <img src="assets/images/gallery/photo-02.jpg" alt="웨딩 사진 2" width="400" height="500" loading="lazy" class="gallery__img">
         <img src="assets/images/gallery/photo-03.jpg" alt="웨딩 사진 3" width="400" height="500" loading="lazy" class="gallery__img">
@@ -140,6 +144,7 @@
         <img src="assets/images/gallery/photo-10.jpg" alt="웨딩 사진 10" width="400" height="500" loading="lazy" class="gallery__img">
         <img src="assets/images/gallery/photo-11.jpg" alt="웨딩 사진 11" width="400" height="500" loading="lazy" class="gallery__img">
         <img src="assets/images/gallery/photo-12.jpg" alt="웨딩 사진 12" width="400" height="500" loading="lazy" class="gallery__img">
+        -->
       </div>
     </div>
 
@@ -198,9 +203,9 @@
       <div id="map-fallback" class="map__fallback" hidden>
         <p class="map__fallback-address">서울 강남구 논현로 742</p>
         <div class="map__fallback-links">
-          <a href="https://map.kakao.com/link/to/루클라비더화이트,37.4979,127.0276" target="_blank" rel="noopener noreferrer" class="map__link" aria-label="카카오맵에서 보기">카카오맵</a>
-          <a href="https://www.google.com/maps/search/?api=1&query=37.4979,127.0276" target="_blank" rel="noopener noreferrer" class="map__link" aria-label="구글맵에서 보기">구글맵</a>
-          <a href="https://map.naver.com/v5/search/서울시 강남구 테헤란로 123" target="_blank" rel="noopener noreferrer" class="map__link" aria-label="네이버맵에서 보기">네이버맵</a>
+          <a href="https://map.kakao.com/link/to/루클라비더화이트,37.518471,127.029254" target="_blank" rel="noopener noreferrer" class="map__link" aria-label="카카오맵에서 보기">카카오맵</a>
+          <a href="https://www.google.com/maps/search/?api=1&query=37.518471,127.029254" target="_blank" rel="noopener noreferrer" class="map__link" aria-label="구글맵에서 보기">구글맵</a>
+          <a href="https://map.naver.com/v5/search/서울 강남구 논현로 742" target="_blank" rel="noopener noreferrer" class="map__link" aria-label="네이버맵에서 보기">네이버맵</a>
         </div>
       </div>
     </div>
@@ -347,9 +352,6 @@
 
   <!-- Toast notification container -->
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-
-  <!-- Kakao Maps SDK (replace YOUR_KAKAO_APP_KEY with actual key) -->
-  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_APP_KEY"></script>
 
   <!-- Main script -->
   <script src="assets/js/main.js" defer></script>
