@@ -230,13 +230,6 @@ const CalendarWidget = (() => {
     var month = date.getMonth(); // 0-indexed
     var weddingDay = date.getDate();
 
-    var timeHour = date.getHours();
-    var timeMinute = date.getMinutes();
-    var isAfternoon = timeHour >= 12;
-    var displayHour = isAfternoon ? (timeHour === 12 ? 12 : timeHour - 12) : (timeHour === 0 ? 12 : timeHour);
-    var displayMinute = timeMinute < 10 ? '0' + timeMinute : '' + timeMinute;
-    var timeStr = (isAfternoon ? '오후' : '오전') + ' ' + displayHour + ':' + displayMinute;
-
     var firstDay = new Date(year, month, 1).getDay(); // 0=Sun
     var daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -261,7 +254,7 @@ const CalendarWidget = (() => {
       }
 
       if (d === weddingDay) {
-        html += '<td class="calendar-today"><span class="cal-num">' + d + '</span><span class="cal-time">' + timeStr + '</span></td>';
+        html += '<td class="calendar-today"><span class="cal-num">' + d + '</span></td>';
       } else {
         html += '<td>' + d + '</td>';
       }
@@ -275,6 +268,15 @@ const CalendarWidget = (() => {
     }
 
     html += '</tr></tbody></table>';
+
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const isAfternoon = hours >= 12;
+    const displayHour = isAfternoon ? (hours === 12 ? 12 : hours - 12) : (hours === 0 ? 12 : hours);
+    const displayMinute = minutes < 10 ? '0' + minutes : '' + minutes;
+    const timeStr = (isAfternoon ? '오후' : '오전') + ' ' + displayHour + ':' + displayMinute;
+    html += '<p class="calendar-time">' + timeStr + '</p>';
+
     container.innerHTML = html;
   }
 
