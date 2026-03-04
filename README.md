@@ -52,9 +52,9 @@ friend-wedding/
 │   └── images/
 │       ├── couple-main.jpg      # 히어로 커플 사진
 │       └── gallery/
-│           └── photo-01~12.jpg  # 갤러리 사진 (최대 12장)
+│           └── photo-01~28.jpg  # 갤러리 사진
 └── audio/
-    └── bgm.mp3         # 배경음악
+    └── audio_test.mp3  # 배경음악
 ```
 
 ---
@@ -91,12 +91,12 @@ const CONFIG = {
 ### 3. 사진 추가
 
 - `assets/images/couple-main.jpg` — 히어로 커플 사진 교체
-- `assets/images/gallery/photo-01.jpg` ~ `photo-12.jpg` — 갤러리 사진 추가
+- `assets/images/gallery/photo-01.jpg` ~ `photo-28.jpg` — 갤러리 사진 추가
 - `index.html` 갤러리 섹션의 `<!-- ... -->` 주석을 해제하여 이미지 활성화
 
 ### 4. 배경음악
 
-`audio/bgm.mp3` 파일을 교체합니다.
+`audio/audio_test.mp3` 파일을 교체합니다.
 
 ### 5. 계좌번호
 
