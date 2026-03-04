@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ee2826711b4264015800d17421300f05"></script>
-  <script src="script.js?v=3"></script>
+  <script src="script.js?v=4"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>박상우 ♥ 박재은 결혼합니다</title>
@@ -41,7 +41,6 @@
           <span class="hero__bride">박재은</span>
         </h1>
         <div class="hero__photo-wrap">
-          <!--
           <img
             src="assets/images/couple-main.jpg"
             alt="박상우와 박재은 커플 사진"
@@ -49,52 +48,58 @@
             width="480"
             height="640"
           >
-          -->
+        </div>
+      </div>
+      <div class="container">
+        <h2 class="section__title">Save the Date</h2>
+        <p class="save-date__date">2026. 11. 15. SUN</p>
+        <p class="save-date__time">PM 14:00</p>
+        <div class="save-date__countdown">
+          <p class="save-date__countdown-label">결혼식까지</p>
+          <div class="save-date__countdown-timer" id="countdown">
+            <div class="countdown__item">
+              <span class="countdown__number" id="countdown-days">0</span>
+              <span class="countdown__label">일</span>
+            </div>
+            <div class="countdown__item">
+              <span class="countdown__number" id="countdown-hours">0</span>
+              <span class="countdown__label">시간</span>
+            </div>
+            <div class="countdown__item">
+              <span class="countdown__number" id="countdown-minutes">0</span>
+              <span class="countdown__label">분</span>
+            </div>
+            <div class="countdown__item">
+              <span class="countdown__number" id="countdown-seconds">0</span>
+              <span class="countdown__label">초</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Fixed floating audio button -->
-    <button
-      id="audio-toggle"
-      class="audio-btn"
-      type="button"
-      aria-label="배경음악 재생/정지"
-      title="배경음악 재생/정지"
-    >
-      <span class="audio-btn__icon" aria-hidden="true">&#9834;</span>
-    </button>
+    <!-- Fixed floating buttons -->
+    <div class="float-btns">
+      <button
+        id="zoom-toggle"
+        class="zoom-btn"
+        type="button"
+        aria-label="화면 크게/원래대로"
+        title="화면 크게/원래대로"
+      >
+        <span class="zoom-btn__icon" aria-hidden="true">&#128269;</span><span class="zoom-btn__sign" aria-hidden="true">+</span>
+      </button>
+      <button
+        id="audio-toggle"
+        class="audio-btn"
+        type="button"
+        aria-label="배경음악 재생/정지"
+        title="배경음악 재생/정지"
+      >
+        <span class="audio-btn__icon" aria-hidden="true">&#9834;</span>
+      </button>
+    </div>
   </header>
-
-  <!-- ========== 2. Save the Date ========== -->
-  <section id="save-the-date" class="section reveal">
-    <div class="container">
-      <h2 class="section__title">Save the Date</h2>
-      <p class="save-date__date">2026. 11. 15. SUN</p>
-      <p class="save-date__time">PM 14:00</p>
-      <div class="save-date__countdown">
-        <p class="save-date__countdown-label">결혼식까지</p>
-        <div class="save-date__countdown-timer" id="countdown">
-          <div class="countdown__item">
-            <span class="countdown__number" id="countdown-days">0</span>
-            <span class="countdown__label">일</span>
-          </div>
-          <div class="countdown__item">
-            <span class="countdown__number" id="countdown-hours">0</span>
-            <span class="countdown__label">시간</span>
-          </div>
-          <div class="countdown__item">
-            <span class="countdown__number" id="countdown-minutes">0</span>
-            <span class="countdown__label">분</span>
-          </div>
-          <div class="countdown__item">
-            <span class="countdown__number" id="countdown-seconds">0</span>
-            <span class="countdown__label">초</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- ========== 3. Invitation ========== -->
   <section id="invitation" class="section reveal">
@@ -134,22 +139,7 @@
   <section id="gallery" class="section reveal">
     <div class="container">
       <h2 class="section__title">갤러리</h2>
-      <div class="gallery__grid">
-        <!--
-        <img src="assets/images/gallery/photo-01.jpg" alt="웨딩 사진 1" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-02.jpg" alt="웨딩 사진 2" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-03.jpg" alt="웨딩 사진 3" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-04.jpg" alt="웨딩 사진 4" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-05.jpg" alt="웨딩 사진 5" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-06.jpg" alt="웨딩 사진 6" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-07.jpg" alt="웨딩 사진 7" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-08.jpg" alt="웨딩 사진 8" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-09.jpg" alt="웨딩 사진 9" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-10.jpg" alt="웨딩 사진 10" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-11.jpg" alt="웨딩 사진 11" width="400" height="500" loading="lazy" class="gallery__img">
-        <img src="assets/images/gallery/photo-12.jpg" alt="웨딩 사진 12" width="400" height="500" loading="lazy" class="gallery__img">
-        -->
-      </div>
+      <div class="gallery__grid"></div>
     </div>
 
   </section>
@@ -317,6 +307,12 @@
     </div>
 
   </section>
+
+  <!-- ========== 10. Footer Thanks ========== -->
+  <footer class="footer-thanks">
+    <p class="footer-thanks__text">감사합니다 &#128149;</p>
+    <p class="footer-thanks__names">박상우 · 박재은</p>
+  </footer>
 
   <!-- Guest Book Modal (outside .reveal section to avoid transform stacking context) -->
   <div id="guestbook-modal" class="modal" role="dialog" aria-label="방명록 작성" aria-modal="true" hidden>

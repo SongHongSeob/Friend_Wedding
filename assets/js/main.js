@@ -8,9 +8,10 @@ const CONFIG = {
     lng: 127.029254
   },
   gallery: {
-    count: 12,
     basePath: 'assets/images/gallery/photo-',
-    extension: '.jpg'
+    extension: '.jpg',
+    maxProbe: 60,
+    initialShow: 6
   },
   guestbook: {
     storageKey: 'wedding-guestbook-messages',
@@ -29,7 +30,7 @@ const AudioPlayer = (() => {
     if (!btn) return;
 
     try {
-      audio = new Audio('audio/bgm.mp3');
+      audio = new Audio('audio/audio_test.mp3');
       audio.loop = true;
       audio.preload = 'none';
     } catch (e) {
@@ -174,6 +175,95 @@ const Lightbox = (() => {
     } else {
       prev(); // swipe right = prev
     }
+  }
+
+  function refresh() {
+    images = Array.from(document.querySelectorAll('.gallery__img'));
+  }
+
+  return { init: init, refresh: refresh };
+})();
+
+/* ===== Module 3-B: Gallery Builder ===== */
+const Gallery = (() => {
+  function init() {
+    const grid = document.querySelector('.gallery__grid');
+    if (!grid) return;
+
+    const { basePath, extension, maxProbe, initialShow } = CONFIG.gallery;
+    probeImages(basePath, extension, maxProbe, function (srcs) {
+      buildGallery(grid, srcs, initialShow);
+    });
+  }
+
+  function probeImages(basePath, ext, max, callback) {
+    const found = [];
+    let idx = 1;
+
+    function next() {
+      if (idx > max) { callback(found); return; }
+      const num = String(idx).padStart(2, '0');
+      const src = basePath + num + ext;
+      const probe = new Image();
+      probe.onload = function () { found.push(src); idx++; next(); };
+      probe.onerror = function () { callback(found); }; // Stop at first 404
+      probe.src = src;
+    }
+
+    next();
+  }
+
+  function buildGallery(grid, srcs, initialShow) {
+    grid.innerHTML = '';
+    if (srcs.length === 0) return;
+
+    srcs.forEach(function (src, i) {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = '웨딩 사진 ' + (i + 1);
+      img.width = 400;
+      img.height = 500;
+      img.loading = 'lazy';
+      img.className = 'gallery__img';
+      if (i >= initialShow) {
+        img.classList.add('gallery__img--hidden');
+      }
+      grid.appendChild(img);
+    });
+
+    Lightbox.refresh();
+
+    if (srcs.length > initialShow) {
+      addMoreButton(grid, srcs.length);
+    }
+  }
+
+  function addMoreButton(grid, total) {
+    const STEP = CONFIG.gallery.initialShow;
+    const btn = document.createElement('button');
+    btn.className = 'gallery__more-btn';
+    btn.type = 'button';
+
+    function updateButton() {
+      const hiddenImgs = grid.querySelectorAll('.gallery__img--hidden');
+      if (hiddenImgs.length === 0) {
+        btn.remove();
+        return;
+      }
+      btn.textContent = '더 많은 사진 보기';
+    }
+
+    btn.addEventListener('click', function () {
+      const hiddenImgs = Array.from(grid.querySelectorAll('.gallery__img--hidden'));
+      hiddenImgs.slice(0, STEP).forEach(function (img) {
+        img.classList.remove('gallery__img--hidden');
+      });
+      Lightbox.refresh();
+      updateButton();
+    });
+
+    grid.insertAdjacentElement('afterend', btn);
+    updateButton();
   }
 
   return { init: init };
@@ -375,6 +465,7 @@ const GuestBook = (() => {
   let pwVerifyInput = null;
   let pwVerifyCallback = null;
   let pwVerifySavedScrollY = 0;
+  let historyPushed = false;
 
   function init() {
     modal = document.getElementById('guestbook-modal');
@@ -397,12 +488,22 @@ const GuestBook = (() => {
 
     // Close handlers
     modal.querySelector('.modal__close').addEventListener('click', closeModal);
-    modal.querySelector('.modal__backdrop').addEventListener('click', closeModal);
+    modal.querySelector('.modal__backdrop').addEventListener('click', function (e) {
+      if (e.target === this) closeModal();
+    });
 
     // Escape key
     document.addEventListener('keydown', function (e) {
       if (modal.hidden) return;
       if (e.key === 'Escape') closeModal();
+    });
+
+    // Android back button: intercept popstate to close modal instead of leaving page
+    window.addEventListener('popstate', function () {
+      if (!modal.hidden) {
+        historyPushed = false;
+        resetModalState();
+      }
     });
 
     // Character count
@@ -435,7 +536,9 @@ const GuestBook = (() => {
     // Password verify modal event listeners
     if (pwVerifyModal) {
       pwVerifyModal.querySelector('.modal__close').addEventListener('click', closePasswordVerify);
-      pwVerifyModal.querySelector('.modal__backdrop').addEventListener('click', closePasswordVerify);
+      pwVerifyModal.querySelector('.modal__backdrop').addEventListener('click', function (e) {
+        if (e.target === this) closePasswordVerify();
+      });
       var pwVerifyForm = document.getElementById('pw-verify-form');
       if (pwVerifyForm) {
         pwVerifyForm.addEventListener('submit', function(e) {
@@ -454,11 +557,19 @@ const GuestBook = (() => {
   }
 
   function openModal() {
+    if (!modal.hidden) return; // Prevent double-open on rapid tap
     document.body.style.overflow = 'hidden';
     modal.hidden = false;
+
+    // iOS Safari: focus() must be called synchronously within user gesture to show keyboard
+    if (nameInput) nameInput.focus();
+
+    // Android: push a history state so the back button closes the modal instead of leaving the page
+    history.pushState({ gbModal: true }, '');
+    historyPushed = true;
   }
 
-  function closeModal() {
+  function resetModalState() {
     modal.hidden = true;
     document.body.style.overflow = '';
 
@@ -475,6 +586,16 @@ const GuestBook = (() => {
     if (submitBtn) submitBtn.textContent = '등록하기';
 
     clearErrors();
+  }
+
+  function closeModal() {
+    resetModalState();
+
+    // Pop the history state we pushed on open (triggers popstate, but modal is already hidden so handler is a no-op)
+    if (historyPushed) {
+      historyPushed = false;
+      history.back();
+    }
   }
 
   function handleSubmit() {
@@ -668,6 +789,7 @@ const GuestBook = (() => {
       var data = localStorage.getItem(CONFIG.guestbook.storageKey);
       return data ? JSON.parse(data) : [];
     } catch (e) {
+      console.warn('Failed to parse guestbook data from localStorage:', e);
       return [];
     }
   }
@@ -694,7 +816,7 @@ const GuestBook = (() => {
 
       var actionBtns = '';
       if (msg.docId) {
-        var safeDocId = escapeHTML(msg.docId);
+        var safeDocId = (msg.docId || '').replace(/[^A-Za-z0-9\-_]/g, '');
         actionBtns =
           '<div class="guestbook__message-actions">' +
             '<button class="gb-delete-btn" type="button" data-doc-id="' + safeDocId + '" aria-label="메시지 삭제">&times;</button>' +
@@ -826,11 +948,13 @@ function initKakaoMap() {
     marker.setMap(map);
 
     // Info window
+    /*
     var infowindow = new kakao.maps.InfoWindow({
       content: '<div style="padding:5px;font-size:12px;text-align:center;">' +
         CONFIG.venue.name + '</div>'
     });
     infowindow.open(map, marker);
+    */
 
     // Handle resize
     var resizeTimer;
@@ -847,11 +971,51 @@ function initKakaoMap() {
   }
 }
 
+/* ===== Module N: Zoom Controller ===== */
+const ZoomController = (() => {
+  let btn = null;
+  let sign = null;
+  let isZoomed = false;
+  const STORAGE_KEY = 'wedding-zoom-state';
+
+  function applyZoom(zoomed) {
+    isZoomed = zoomed;
+    if (zoomed) {
+      document.documentElement.style.fontSize = '125%';
+      if (sign) sign.textContent = '\u2212';
+      if (btn) btn.classList.add('is-zoomed');
+      localStorage.setItem(STORAGE_KEY, '1');
+    } else {
+      document.documentElement.style.fontSize = '';
+      if (sign) sign.textContent = '+';
+      if (btn) btn.classList.remove('is-zoomed');
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  function init() {
+    btn = document.getElementById('zoom-toggle');
+    if (!btn) return;
+    sign = btn.querySelector('.zoom-btn__sign');
+
+    // Restore zoom preference from localStorage
+    if (localStorage.getItem(STORAGE_KEY) === '1') {
+      applyZoom(true);
+    }
+
+    btn.addEventListener('click', function () { applyZoom(!isZoomed); });
+  }
+
+  return { init: init };
+})();
+
 /* ===== DOMContentLoaded Init ===== */
 document.addEventListener('DOMContentLoaded', function () {
   ScrollReveal.init();
+  ZoomController.init();
   AudioPlayer.init();
   Lightbox.init();
+  Gallery.init();
   Countdown.init();
   CalendarWidget.init();
   AccountCopy.init();
