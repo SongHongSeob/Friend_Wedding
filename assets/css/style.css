@@ -730,7 +730,7 @@ a:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  margin-top: 1.5rem;
 }
 
 .guestbook__message {
@@ -805,7 +805,6 @@ a:focus-visible {
 .guestbook__btn {
   display: block;
   width: 100%;
-  max-width: 280px;
   margin: 0 auto;
   min-height: 48px;
   padding: 0.75rem 1.5rem;

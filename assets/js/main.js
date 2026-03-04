@@ -370,6 +370,11 @@ const GuestBook = (() => {
   let editDocId = null;
   let cachedMessages = [];
   let savedScrollY = 0;
+  let passwordInput = null;
+  let pwVerifyModal = null;
+  let pwVerifyInput = null;
+  let pwVerifyCallback = null;
+  let pwVerifySavedScrollY = 0;
 
   function init() {
     modal = document.getElementById('guestbook-modal');
@@ -378,6 +383,9 @@ const GuestBook = (() => {
     messageInput = document.getElementById('gb-message');
     charCount = document.getElementById('gb-char-count');
     messagesContainer = document.getElementById('guestbook-messages');
+    passwordInput = document.getElementById('gb-password');
+    pwVerifyModal = document.getElementById('pw-verify-modal');
+    pwVerifyInput = document.getElementById('pw-verify-input');
 
     if (!modal || !form) return;
 
@@ -423,6 +431,21 @@ const GuestBook = (() => {
       });
     }
 
+
+    // Password verify modal event listeners
+    if (pwVerifyModal) {
+      pwVerifyModal.querySelector('.modal__close').addEventListener('click', closePasswordVerify);
+      pwVerifyModal.querySelector('.modal__backdrop').addEventListener('click', closePasswordVerify);
+      var pwVerifyForm = document.getElementById('pw-verify-form');
+      if (pwVerifyForm) {
+        pwVerifyForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          var entered = pwVerifyInput ? pwVerifyInput.value : '';
+          if (pwVerifyCallback) pwVerifyCallback(entered);
+        });
+      }
+    }
+
     // Render existing messages (localStorage fallback until Firebase loads)
     renderMessages();
 
@@ -431,24 +454,20 @@ const GuestBook = (() => {
   }
 
   function openModal() {
-    savedScrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = '-' + savedScrollY + 'px';
-    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
     modal.hidden = false;
-    if (nameInput) nameInput.focus();
   }
 
   function closeModal() {
     modal.hidden = true;
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    window.scrollTo(0, savedScrollY);
+    document.body.style.overflow = '';
 
     editDocId = null;
     form.reset();
     if (charCount) charCount.textContent = '0';
+
+    var pwGroup = document.getElementById('gb-password-group');
+    if (pwGroup) pwGroup.hidden = false;
 
     var modalTitle = modal.querySelector('.modal__title');
     var submitBtn = form.querySelector('.form__submit');
@@ -478,6 +497,15 @@ const GuestBook = (() => {
       valid = false;
     }
 
+    var password = '';
+    if (!editDocId) {
+      password = passwordInput ? passwordInput.value.trim() : '';
+      if (!password) {
+        showError('gb-password-error', '비밀번호를 입력해주세요');
+        valid = false;
+      }
+    }
+
     if (!valid) return;
 
     if (editDocId) {
@@ -501,6 +529,7 @@ const GuestBook = (() => {
       var entry = {
         name: name,
         message: message,
+        password: password,
         date: new Date().toISOString()
       };
 
@@ -529,34 +558,90 @@ const GuestBook = (() => {
     }
     if (!msg) return;
 
-    editDocId = docId;
-    if (nameInput) nameInput.value = msg.name;
-    if (messageInput) {
-      messageInput.value = msg.message;
-      if (charCount) charCount.textContent = msg.message.length;
-    }
+    var desc = document.getElementById('pw-verify-desc');
+    if (desc) desc.textContent = '메시지를 수정하려면 비밀번호를 입력해주세요';
 
-    var modalTitle = modal.querySelector('.modal__title');
-    var submitBtn = form.querySelector('.form__submit');
-    if (modalTitle) modalTitle.textContent = '메시지 수정';
-    if (submitBtn) submitBtn.textContent = '수정하기';
+    showPasswordVerify(function(entered) {
+      if (entered !== msg.password) {
+        var errEl = document.getElementById('pw-verify-error');
+        if (errEl) errEl.textContent = '비밀번호가 올바르지 않습니다';
+        return;
+      }
+      closePasswordVerify();
 
-    openModal();
+      editDocId = docId;
+      if (nameInput) nameInput.value = msg.name;
+      if (messageInput) {
+        messageInput.value = msg.message;
+        if (charCount) charCount.textContent = String(msg.message.length);
+      }
+
+      var pwGroup = document.getElementById('gb-password-group');
+      if (pwGroup) pwGroup.hidden = true;
+
+      var modalTitle = modal.querySelector('.modal__title');
+      var submitBtn = form.querySelector('.form__submit');
+      if (modalTitle) modalTitle.textContent = '메시지 수정';
+      if (submitBtn) submitBtn.textContent = '수정하기';
+
+      openModal();
+    });
   }
 
   function handleDelete(docId) {
-    if (!confirm('메시지를 삭제하시겠습니까?')) return;
-
-    if (!window.__fbDelete) {
-      showToast('데이터베이스 연결 오류. 새로고침 후 다시 시도해주세요');
-      return;
+    var msg = null;
+    for (var i = 0; i < cachedMessages.length; i++) {
+      if (cachedMessages[i].docId === docId) {
+        msg = cachedMessages[i];
+        break;
+      }
     }
+    if (!msg) return;
 
-    window.__fbDelete(docId).then(function () {
-      showToast('메시지가 삭제되었습니다');
-    }).catch(function () {
-      showToast('삭제에 실패했습니다. 다시 시도해주세요');
+    var desc = document.getElementById('pw-verify-desc');
+    if (desc) desc.textContent = '메시지를 삭제하려면 비밀번호를 입력해주세요';
+
+    showPasswordVerify(function(entered) {
+      if (entered !== msg.password) {
+        var errEl = document.getElementById('pw-verify-error');
+        if (errEl) errEl.textContent = '비밀번호가 올바르지 않습니다';
+        return;
+      }
+      closePasswordVerify();
+
+      if (!window.__fbDelete) {
+        showToast('데이터베이스 연결 오류. 새로고침 후 다시 시도해주세요');
+        return;
+      }
+
+      window.__fbDelete(docId).then(function () {
+        showToast('메시지가 삭제되었습니다');
+      }).catch(function () {
+        showToast('삭제에 실패했습니다. 다시 시도해주세요');
+      });
     });
+  }
+
+  function showPasswordVerify(callback) {
+    pwVerifyCallback = callback;
+    var errEl = document.getElementById('pw-verify-error');
+    if (errEl) errEl.textContent = '';
+    if (pwVerifyInput) pwVerifyInput.value = '';
+    if (pwVerifyModal) {
+      document.body.style.overflow = 'hidden';
+      pwVerifyModal.hidden = false;
+    }
+  }
+
+  function closePasswordVerify() {
+    if (pwVerifyModal) {
+      pwVerifyModal.hidden = true;
+      document.body.style.overflow = '';
+    }
+    pwVerifyCallback = null;
+    if (pwVerifyInput) pwVerifyInput.value = '';
+    var errEl = document.getElementById('pw-verify-error');
+    if (errEl) errEl.textContent = '';
   }
 
   function saveMessage(entry) {
