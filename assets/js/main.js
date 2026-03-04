@@ -78,6 +78,9 @@ const Lightbox = (() => {
   let images = [];
   let currentIndex = 0;
 
+  // Scroll position saved before lock for iOS scroll restoration
+  let savedScrollY = 0;
+
   // Touch tracking
   let touchStartX = 0;
   let touchEndX = 0;
@@ -131,13 +134,19 @@ const Lightbox = (() => {
   function open(index) {
     currentIndex = index;
     updateImage();
+    savedScrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = '-' + savedScrollY + 'px';
+    document.body.style.width = '100%';
     lightbox.hidden = false;
-    document.documentElement.classList.add('scroll-locked');
   }
 
   function close() {
     lightbox.hidden = true;
-    document.documentElement.classList.remove('scroll-locked');
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo(0, savedScrollY);
   }
 
   function prev() {
@@ -360,6 +369,7 @@ const GuestBook = (() => {
   let messagesContainer = null;
   let editDocId = null;
   let cachedMessages = [];
+  let savedScrollY = 0;
 
   function init() {
     modal = document.getElementById('guestbook-modal');
@@ -421,14 +431,20 @@ const GuestBook = (() => {
   }
 
   function openModal() {
+    savedScrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = '-' + savedScrollY + 'px';
+    document.body.style.width = '100%';
     modal.hidden = false;
-    document.documentElement.classList.add('scroll-locked');
     if (nameInput) nameInput.focus();
   }
 
   function closeModal() {
     modal.hidden = true;
-    document.documentElement.classList.remove('scroll-locked');
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo(0, savedScrollY);
 
     editDocId = null;
     form.reset();
