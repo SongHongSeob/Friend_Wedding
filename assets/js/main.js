@@ -77,7 +77,6 @@ const Lightbox = (() => {
   let lightboxImg = null;
   let images = [];
   let currentIndex = 0;
-  let scrollY = 0;
 
   // Touch tracking
   let touchStartX = 0;
@@ -133,16 +132,12 @@ const Lightbox = (() => {
     currentIndex = index;
     updateImage();
     lightbox.hidden = false;
-    scrollY = window.scrollY;
-    document.body.classList.add('scroll-locked');
-    document.body.style.top = '-' + scrollY + 'px';
+    document.documentElement.classList.add('scroll-locked');
   }
 
   function close() {
     lightbox.hidden = true;
-    document.body.classList.remove('scroll-locked');
-    document.body.style.top = '';
-    window.scrollTo(0, scrollY);
+    document.documentElement.classList.remove('scroll-locked');
   }
 
   function prev() {
@@ -363,7 +358,8 @@ const GuestBook = (() => {
   let messageInput = null;
   let charCount = null;
   let messagesContainer = null;
-  let scrollY = 0;
+  let editDocId = null;
+  let cachedMessages = [];
 
   function init() {
     modal = document.getElementById('guestbook-modal');
@@ -404,23 +400,45 @@ const GuestBook = (() => {
       handleSubmit();
     });
 
-    // Render existing messages
+    // Edit/delete button delegation
+    if (messagesContainer) {
+      messagesContainer.addEventListener('click', function (e) {
+        var editBtn = e.target.closest('.gb-edit-btn');
+        var deleteBtn = e.target.closest('.gb-delete-btn');
+        if (editBtn) {
+          handleEdit(editBtn.getAttribute('data-doc-id'));
+        } else if (deleteBtn) {
+          handleDelete(deleteBtn.getAttribute('data-doc-id'));
+        }
+      });
+    }
+
+    // Render existing messages (localStorage fallback until Firebase loads)
     renderMessages();
+
+    // Expose render function for Firebase real-time updates
+    window.__renderGuestBookMessages = renderMessages;
   }
 
   function openModal() {
     modal.hidden = false;
-    scrollY = window.scrollY;
-    document.body.classList.add('scroll-locked');
-    document.body.style.top = '-' + scrollY + 'px';
+    document.documentElement.classList.add('scroll-locked');
     if (nameInput) nameInput.focus();
   }
 
   function closeModal() {
     modal.hidden = true;
-    document.body.classList.remove('scroll-locked');
-    document.body.style.top = '';
-    window.scrollTo(0, scrollY);
+    document.documentElement.classList.remove('scroll-locked');
+
+    editDocId = null;
+    form.reset();
+    if (charCount) charCount.textContent = '0';
+
+    var modalTitle = modal.querySelector('.modal__title');
+    var submitBtn = form.querySelector('.form__submit');
+    if (modalTitle) modalTitle.textContent = '축하 메시지';
+    if (submitBtn) submitBtn.textContent = '등록하기';
+
     clearErrors();
   }
 
@@ -446,31 +464,101 @@ const GuestBook = (() => {
 
     if (!valid) return;
 
-    var entry = {
-      name: name,
-      message: message,
-      date: new Date().toISOString()
-    };
+    if (editDocId) {
+      // Edit mode: update existing message in Firestore
+      var docIdToUpdate = editDocId;
+      form.reset();
+      if (charCount) charCount.textContent = '0';
+      closeModal();
 
-    saveMessage(entry);
-    renderMessages();
+      if (window.__fbUpdate) {
+        window.__fbUpdate(docIdToUpdate, name, message).then(function () {
+          showToast('메시지가 수정되었습니다');
+        }).catch(function () {
+          showToast('수정에 실패했습니다. 다시 시도해주세요');
+        });
+      } else {
+        showToast('데이터베이스 연결 오류. 새로고침 후 다시 시도해주세요');
+      }
+    } else {
+      // New message mode
+      var entry = {
+        name: name,
+        message: message,
+        date: new Date().toISOString()
+      };
 
-    // Reset form
-    form.reset();
-    if (charCount) charCount.textContent = '0';
+      saveMessage(entry);
 
-    showToast('메시지가 등록되었습니다');
-    closeModal();
+      // Only re-render from localStorage when Firebase is not active.
+      // When Firebase is active, onSnapshot handles rendering automatically.
+      if (!window.__fbSave) {
+        renderMessages();
+      }
+
+      form.reset();
+      if (charCount) charCount.textContent = '0';
+      showToast('메시지가 등록되었습니다');
+      closeModal();
+    }
+  }
+
+  function handleEdit(docId) {
+    var msg = null;
+    for (var i = 0; i < cachedMessages.length; i++) {
+      if (cachedMessages[i].docId === docId) {
+        msg = cachedMessages[i];
+        break;
+      }
+    }
+    if (!msg) return;
+
+    editDocId = docId;
+    if (nameInput) nameInput.value = msg.name;
+    if (messageInput) {
+      messageInput.value = msg.message;
+      if (charCount) charCount.textContent = msg.message.length;
+    }
+
+    var modalTitle = modal.querySelector('.modal__title');
+    var submitBtn = form.querySelector('.form__submit');
+    if (modalTitle) modalTitle.textContent = '메시지 수정';
+    if (submitBtn) submitBtn.textContent = '수정하기';
+
+    openModal();
+  }
+
+  function handleDelete(docId) {
+    if (!confirm('메시지를 삭제하시겠습니까?')) return;
+
+    if (!window.__fbDelete) {
+      showToast('데이터베이스 연결 오류. 새로고침 후 다시 시도해주세요');
+      return;
+    }
+
+    window.__fbDelete(docId).then(function () {
+      showToast('메시지가 삭제되었습니다');
+    }).catch(function () {
+      showToast('삭제에 실패했습니다. 다시 시도해주세요');
+    });
   }
 
   function saveMessage(entry) {
-    var messages = getMessages();
-    messages.unshift(entry);
-
-    try {
-      localStorage.setItem(CONFIG.guestbook.storageKey, JSON.stringify(messages));
-    } catch (e) {
-      // localStorage full or unavailable
+    if (window.__fbSave) {
+      // Firebase active: save to Firestore, fall back to localStorage on error
+      window.__fbSave(entry).catch(function() {
+        var messages = getMessages();
+        messages.unshift(entry);
+        try {
+          localStorage.setItem(CONFIG.guestbook.storageKey, JSON.stringify(messages));
+        } catch (e) {}
+      });
+    } else {
+      var messages = getMessages();
+      messages.unshift(entry);
+      try {
+        localStorage.setItem(CONFIG.guestbook.storageKey, JSON.stringify(messages));
+      } catch (e) {}
     }
   }
 
@@ -483,10 +571,14 @@ const GuestBook = (() => {
     }
   }
 
-  function renderMessages() {
+  function renderMessages(messages) {
     if (!messagesContainer) return;
 
-    var messages = getMessages();
+    if (messages === undefined) {
+      messages = getMessages();
+    }
+
+    cachedMessages = messages;
 
     if (messages.length === 0) {
       messagesContainer.innerHTML = '';
@@ -499,12 +591,23 @@ const GuestBook = (() => {
       var escapedName = escapeHTML(msg.name);
       var escapedMessage = escapeHTML(msg.message);
 
+      var actionBtns = '';
+      if (msg.docId) {
+        var safeDocId = escapeHTML(msg.docId);
+        actionBtns =
+          '<div class="guestbook__message-actions">' +
+            '<button class="gb-delete-btn" type="button" data-doc-id="' + safeDocId + '" aria-label="메시지 삭제">&times;</button>' +
+            '<button class="gb-edit-btn" type="button" data-doc-id="' + safeDocId + '" aria-label="메시지 수정">&#9998;</button>' +
+          '</div>';
+      }
+
       html += '<div class="guestbook__message">' +
-        '<div class="guestbook__message-header">' +
-          '<span class="guestbook__message-name">' + escapedName + '</span>' +
+        actionBtns +
+        '<p class="guestbook__message-text">' + escapedMessage + '</p>' +
+        '<div class="guestbook__message-footer">' +
+          '<span class="guestbook__message-from">From <em>' + escapedName + '</em></span>' +
           '<span class="guestbook__message-date">' + dateStr + '</span>' +
         '</div>' +
-        '<p class="guestbook__message-text">' + escapedMessage + '</p>' +
       '</div>';
     });
 
@@ -514,9 +617,17 @@ const GuestBook = (() => {
   function formatDate(isoString) {
     try {
       var d = new Date(isoString);
+      var year = d.getFullYear();
       var month = d.getMonth() + 1;
       var day = d.getDate();
-      return month + '.' + day;
+      var hours = d.getHours();
+      var minutes = d.getMinutes();
+      var seconds = d.getSeconds();
+      var isAM = hours < 12;
+      var h = hours % 12 || 12;
+      var mm = minutes < 10 ? '0' + minutes : '' + minutes;
+      var ss = seconds < 10 ? '0' + seconds : '' + seconds;
+      return year + '. ' + month + '. ' + day + '. ' + (isAM ? '오전' : '오후') + ' ' + h + ':' + mm + ':' + ss;
     } catch (e) {
       return '';
     }

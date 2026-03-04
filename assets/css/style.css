@@ -734,35 +734,72 @@ a:focus-visible {
 }
 
 .guestbook__message {
-  padding: 1rem 1.25rem;
-  background: var(--color-white);
+  position: relative;
+  padding: 2.25rem 1.25rem 1rem;
+  background: var(--color-bg);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
 }
 
-.guestbook__message-header {
+@media (max-width: 480px) {
+  .guestbook__message {
+    padding: 2.75rem 1rem 1rem;
+  }
+}
+
+.guestbook__message-actions {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.75rem;
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 0.35rem;
+  gap: 0.5rem;
 }
 
-.guestbook__message-name {
-  font-size: 0.9rem;
-  font-weight: 400;
-  color: var(--color-text);
-}
-
-.guestbook__message-date {
-  font-size: 0.75rem;
+.gb-delete-btn,
+.gb-edit-btn {
+  font-size: 1.05rem;
   color: var(--color-text-muted);
+  padding: 0.1rem 0.15rem;
+  line-height: 1;
+  transition: color var(--transition);
+}
+
+.gb-delete-btn:hover,
+.gb-delete-btn:focus-visible,
+.gb-edit-btn:hover,
+.gb-edit-btn:focus-visible {
+  color: var(--color-accent);
 }
 
 .guestbook__message-text {
-  font-size: 0.85rem;
-  color: var(--color-text-light);
-  line-height: 1.6;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  line-height: 1.7;
   word-break: keep-all;
+  padding-right: 3.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.guestbook__message-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.5rem;
+}
+
+.guestbook__message-from {
+  font-size: 0.85rem;
+  color: var(--color-accent);
+}
+
+.guestbook__message-from em {
+  font-style: normal;
+}
+
+.guestbook__message-date {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
 }
 
 .guestbook__btn {
@@ -1007,11 +1044,9 @@ a:focus-visible {
   transform: translateY(0);
 }
 
-/* Scroll lock */
-body.scroll-locked {
+/* Scroll lock: applied to <html> to avoid body position:fixed jump */
+html.scroll-locked {
   overflow: hidden;
-  position: fixed;
-  width: 100%;
 }
 
 /* ===== 17. Responsive (768px, 1024px) ===== */

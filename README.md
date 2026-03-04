@@ -18,7 +18,7 @@
 | 캘린더 | 결혼 당월 달력 렌더링, 결혼일 하이라이트 |
 | 오시는 길 | 카카오맵 임베드 + 지하철/버스 안내 + 지도 앱 링크 |
 | 마음 전하실 곳 | 신랑·신부 양측 계좌번호 (접기/펼치기, 클립보드 복사) |
-| 방명록 | 축하 메시지 작성/조회 (localStorage 저장) |
+| 방명록 | 축하 메시지 작성/수정/삭제 + 실시간 동기화 (Firebase Firestore) |
 
 **추가 기능**
 
@@ -35,7 +35,7 @@
 - **지도**: Kakao Maps JavaScript API
 - **폰트**: Google Fonts (Noto Serif KR, Noto Sans KR, Playfair Display)
 - **배포**: GitHub Pages
-- **저장소**: localStorage (방명록)
+- **데이터베이스**: Firebase Firestore (방명록 실시간 저장/조회/수정/삭제)
 
 ---
 

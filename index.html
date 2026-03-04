@@ -151,17 +151,18 @@
       </div>
     </div>
 
-    <!-- Lightbox overlay -->
-    <div id="lightbox" class="lightbox" role="dialog" aria-label="사진 확대 보기" aria-modal="true" hidden>
-      <div class="lightbox__backdrop"></div>
-      <div class="lightbox__content">
-        <button class="lightbox__close" type="button" aria-label="닫기">&times;</button>
-        <button class="lightbox__prev" type="button" aria-label="이전 사진">&#10094;</button>
-        <img class="lightbox__img" src="" alt="확대 사진">
-        <button class="lightbox__next" type="button" aria-label="다음 사진">&#10095;</button>
-      </div>
-    </div>
   </section>
+
+  <!-- Lightbox overlay (outside .reveal section to avoid transform stacking context) -->
+  <div id="lightbox" class="lightbox" role="dialog" aria-label="사진 확대 보기" aria-modal="true" hidden>
+    <div class="lightbox__backdrop"></div>
+    <div class="lightbox__content">
+      <button class="lightbox__close" type="button" aria-label="닫기">&times;</button>
+      <button class="lightbox__prev" type="button" aria-label="이전 사진">&#10094;</button>
+      <img class="lightbox__img" src="" alt="확대 사진">
+      <button class="lightbox__next" type="button" aria-label="다음 사진">&#10095;</button>
+    </div>
+  </div>
 
   <!-- ========== 5. Calendar ========== -->
   <section id="calendar" class="section reveal">
@@ -308,51 +309,124 @@
       </button>
     </div>
 
-    <!-- Guest Book Modal -->
-    <div id="guestbook-modal" class="modal" role="dialog" aria-label="방명록 작성" aria-modal="true" hidden>
-      <div class="modal__backdrop"></div>
-      <div class="modal__card">
-        <div class="modal__header">
-          <h3 class="modal__title">축하 메시지</h3>
-          <button class="modal__close" type="button" aria-label="닫기">&times;</button>
-        </div>
-        <form id="guestbook-form" class="modal__form" novalidate>
-          <div class="form__group">
-            <label for="gb-name" class="form__label">이름</label>
-            <input
-              type="text"
-              id="gb-name"
-              class="form__input"
-              placeholder="이름을 입력해주세요"
-              required
-              maxlength="20"
-              autocomplete="name"
-            >
-            <span class="form__error" id="gb-name-error"></span>
-          </div>
-          <div class="form__group">
-            <label for="gb-message" class="form__label">메시지</label>
-            <textarea
-              id="gb-message"
-              class="form__textarea"
-              placeholder="축하 메시지를 남겨주세요"
-              required
-              maxlength="200"
-              rows="4"
-            ></textarea>
-            <span class="form__char-count"><span id="gb-char-count">0</span>/200</span>
-            <span class="form__error" id="gb-message-error"></span>
-          </div>
-          <button type="submit" class="form__submit">등록하기</button>
-        </form>
-      </div>
-    </div>
   </section>
+
+  <!-- Guest Book Modal (outside .reveal section to avoid transform stacking context) -->
+  <div id="guestbook-modal" class="modal" role="dialog" aria-label="방명록 작성" aria-modal="true" hidden>
+    <div class="modal__backdrop"></div>
+    <div class="modal__card">
+      <div class="modal__header">
+        <h3 class="modal__title">축하 메시지</h3>
+        <button class="modal__close" type="button" aria-label="닫기">&times;</button>
+      </div>
+      <form id="guestbook-form" class="modal__form" novalidate>
+        <div class="form__group">
+          <label for="gb-name" class="form__label">이름</label>
+          <input
+            type="text"
+            id="gb-name"
+            class="form__input"
+            placeholder="이름을 입력해주세요"
+            required
+            maxlength="20"
+            autocomplete="name"
+          >
+          <span class="form__error" id="gb-name-error"></span>
+        </div>
+        <div class="form__group">
+          <label for="gb-message" class="form__label">메시지</label>
+          <textarea
+            id="gb-message"
+            class="form__textarea"
+            placeholder="축하 메시지를 남겨주세요"
+            required
+            maxlength="200"
+            rows="4"
+          ></textarea>
+          <span class="form__char-count"><span id="gb-char-count">0</span>/200</span>
+          <span class="form__error" id="gb-message-error"></span>
+        </div>
+        <button type="submit" class="form__submit">등록하기</button>
+      </form>
+    </div>
+  </div>
 
   <!-- Toast notification container -->
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <!-- Main script -->
   <script src="assets/js/main.js" defer></script>
+  
+  <!-- Firebase DB 설정 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      updateDoc,
+      deleteDoc,
+      doc,
+      query,
+      orderBy,
+      onSnapshot,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBqcXxtpM7LWVGXs-WD5eNdQ8XzcWhAnUY",
+      authDomain: "friend-wedding.firebaseapp.com",
+      projectId: "friend-wedding",
+      storageBucket: "friend-wedding.firebasestorage.app",
+      messagingSenderId: "112871174420",
+      appId: "1:112871174420:web:081957ad05b743f78a5201",
+      measurementId: "G-TC71WCFWN2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    // Save message to Firestore (called from main.js GuestBook module)
+    window.__fbSave = async function(entry) {
+      await addDoc(collection(db, 'guestbook'), {
+        name: entry.name,
+        message: entry.message,
+        date: serverTimestamp()
+      });
+    };
+
+    // Update existing message in Firestore
+    window.__fbUpdate = async function(docId, name, message) {
+      await updateDoc(doc(db, 'guestbook', docId), { name: name, message: message });
+    };
+
+    // Delete message from Firestore
+    window.__fbDelete = async function(docId) {
+      await deleteDoc(doc(db, 'guestbook', docId));
+    };
+
+    // Real-time listener: re-render messages whenever Firestore changes
+    const q = query(collection(db, 'guestbook'), orderBy('date', 'desc'));
+    const unsubscribeGuestbook = onSnapshot(q, function(snapshot) {
+      const messages = snapshot.docs.map(function(d) {
+        const data = d.data();
+        return {
+          name: data.name,
+          message: data.message,
+          date: data.date ? data.date.toDate().toISOString() : new Date().toISOString(),
+          docId: d.id
+        };
+      });
+      if (window.__renderGuestBookMessages) {
+        window.__renderGuestBookMessages(messages);
+      }
+    });
+
+    window.addEventListener('beforeunload', function() {
+      unsubscribeGuestbook();
+    });
+  </script>
 </body>
 </html>
