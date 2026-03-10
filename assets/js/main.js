@@ -1144,10 +1144,26 @@ var PhotoShare = (function () {
     });
   }
 
-  // Kakao Share 폴백 (REQ-SHARE-008)
+  // @MX:NOTE: [AUTO] REQ-SHARE-008 폴백 체인의 중간 단계: Kakao SDK 실패 시 Web Share API 시도, 미지원 시 클립보드로 최종 폴백
+  // Web Share API로 공유 (카카오톡 포함 네이티브 공유 시트) - Kakao SDK 불가 시 폴백
+  function shareViaNative() {
+    if (navigator.share) {
+      navigator.share({
+        title: '박상우 ♥ 박재은 결혼합니다',
+        text: '2026년 11월 15일 일요일 오후 2시, 루클라비더화이트에서 두 사람이 하나가 됩니다.',
+        url: BASE_URL
+      }).catch(function (e) {
+        if (e.name !== 'AbortError') copyToClipboard();
+      });
+    } else {
+      copyToClipboard();
+    }
+  }
+
+  // Kakao Share SDK → Web Share API → 클립보드 순서로 공유 시도 (REQ-SHARE-008)
   function shareViaKakao() {
     if (typeof Kakao === 'undefined' || !Kakao.Share) {
-      copyToClipboard();
+      shareViaNative();
       return;
     }
     try {
@@ -1171,8 +1187,8 @@ var PhotoShare = (function () {
         }]
       });
     } catch (e) {
-      // REQ-SHARE-010: Kakao 실패 시 클립보드 복사
-      copyToClipboard();
+      // Kakao SDK 실패(도메인 미등록 등) 시 네이티브 공유로 폴백
+      shareViaNative();
     }
   }
 
