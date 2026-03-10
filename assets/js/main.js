@@ -1084,14 +1084,9 @@ var PhotoShare = (function () {
     var url = URL.createObjectURL(blob);
     _previewImg.src = url;
 
-    // REQ-SHARE-005: Web Share 미지원 시 Kakao 버튼 표시 (캐시된 결과 사용)
-    if (_canShareFiles) {
-      _shareBtn.hidden = false;
-      _kakaoShareBtn.hidden = true;
-    } else {
-      _shareBtn.hidden = true;
-      _kakaoShareBtn.hidden = false;
-    }
+    // 공유하기 버튼만 표시 (Web Share API 파일 공유 → 미지원 시 링크 공유로 폴백)
+    _shareBtn.hidden = false;
+    _kakaoShareBtn.hidden = true;
 
     // 스크롤 잠금 (기존 GuestBook 패턴 재사용)
     _savedScrollY = window.scrollY;
@@ -1128,20 +1123,26 @@ var PhotoShare = (function () {
     _historyPushed = false;
   }
 
-  // Web Share API 공유 (REQ-SHARE-004, REQ-SHARE-006)
+  // Web Share API 공유: 파일 공유 지원 시 사진 공유, 미지원 시 링크 공유로 폴백
   function shareViaWebAPI() {
     if (!_resizedBlob) return;
     var file = new File([_resizedBlob], 'wedding-photo.jpg', { type: 'image/jpeg' });
-    navigator.share({
-      files: [file],
-      title: '박상우 ♥ 박재은 결혼합니다',
-      text: '2026년 11월 15일 결혼식에 초대합니다. 청첩장을 확인해 주세요.'
-    }).catch(function (err) {
-      // REQ-SHARE-006: AbortError는 사용자 취소이므로 조용히 무시
-      if (err && err.name !== 'AbortError') {
-        copyToClipboard();
-      }
-    });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      // 파일 공유 지원 (iOS Safari, Android Chrome 등)
+      navigator.share({
+        files: [file],
+        title: '박상우 ♥ 박재은 결혼합니다',
+        text: '2026년 11월 15일 결혼식에 초대합니다.'
+      }).catch(function (err) {
+        if (err && err.name !== 'AbortError') {
+          shareViaNative();
+        }
+      });
+    } else {
+      // 파일 공유 미지원 → 링크 공유로 폴백
+      shareViaNative();
+    }
   }
 
   // @MX:NOTE: [AUTO] REQ-SHARE-008 폴백 체인의 중간 단계: Kakao SDK 실패 시 Web Share API 시도, 미지원 시 클립보드로 최종 폴백
@@ -1271,9 +1272,9 @@ var PhotoShare = (function () {
     // 카메라 버튼 이벤트
     cameraBtn.addEventListener('click', triggerCamera);
 
-    // 직접 카카오 공유 버튼 (사진 없이)
+    // 직접 카카오 공유 버튼 → 사진 선택 후 공유하는 플로우로 진입
     if (kakaoDirectBtn) {
-      kakaoDirectBtn.addEventListener('click', shareViaKakao);
+      kakaoDirectBtn.addEventListener('click', triggerCamera);
     }
 
     // 파일 선택 이벤트
