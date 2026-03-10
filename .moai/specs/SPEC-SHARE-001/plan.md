@@ -72,7 +72,7 @@ updated: 2026-03-10
 Kakao.Share.sendDefault({
     objectType: 'feed',
     content: {
-        title: '송홍섭 & 신부 결혼식에 초대합니다',
+        title: '신랑 & 신부 결혼식에 초대합니다',
         description: '청첩장을 확인해주세요',
         imageUrl: 'https://songhongseob.github.io/assets/img/og-image.jpg',
         link: {
