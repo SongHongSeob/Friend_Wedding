@@ -1316,6 +1316,7 @@ a:focus-visible {
 }
 
 .photo-preview__image-wrap {
+  position: relative;
   width: 100%;
   flex: 1;
   min-height: 0;
@@ -1324,6 +1325,23 @@ a:focus-visible {
   justify-content: center;
   background: #000;
   max-height: 65vh;
+}
+
+.photo-preview__count {
+  position: absolute;
+  bottom: 0.6rem;
+  right: 0.6rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.75rem;
+  font-family: var(--font-sans);
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.photo-preview__count[hidden] {
+  display: none;
 }
 
 .photo-preview__img {

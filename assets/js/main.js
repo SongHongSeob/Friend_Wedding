@@ -1019,7 +1019,7 @@ var PhotoShare = (function () {
   // 사이트 기본 URL (단일 관리)
   var BASE_URL = 'https://songhongseob.github.io/friend-wedding/';
 
-  var _resizedBlob = null;
+  var _resizedBlobs = [];
   var _modal = null;
   var _previewImg = null;
   var _shareBtn = null;
@@ -1027,25 +1027,12 @@ var PhotoShare = (function () {
   var _input = null;
   var _historyPushed = false;
   var _savedScrollY = 0;
-  // Web Share API 파일 공유 지원 여부 캐시 (세션 중 변하지 않음)
-  var _canShareFiles = null;
 
   // Kakao Share SDK 초기화 (REQ-SHARE-009)
   function initKakaoSDK() {
     if (typeof Kakao === 'undefined') return;
     if (!Kakao.isInitialized()) {
       Kakao.init('ee2826711b4264015800d17421300f05');
-    }
-  }
-
-  // Web Share API 파일 공유 지원 여부 감지 - 세션 중 한 번만 실행 (REQ-SHARE-005)
-  function detectCanShareFiles() {
-    if (!navigator.canShare) return false;
-    try {
-      var testFile = new File([''], 'test.jpg', { type: 'image/jpeg' });
-      return navigator.canShare({ files: [testFile] });
-    } catch (e) {
-      return false;
     }
   }
 
@@ -1078,11 +1065,26 @@ var PhotoShare = (function () {
     reader.readAsDataURL(file);
   }
 
-  // 미리보기 모달 열기 (REQ-SHARE-003)
-  function openPreviewModal(blob) {
-    _resizedBlob = blob;
-    var url = URL.createObjectURL(blob);
+  // 미리보기 모달 열기 - 다중 사진 지원 (REQ-SHARE-003)
+  function openPreviewModal(blobs) {
+    // 이전 Object URL이 있으면 먼저 해제 (메모리 누수 방지)
+    if (_previewImg.src) {
+      URL.revokeObjectURL(_previewImg.src);
+    }
+    _resizedBlobs = blobs;
+    var url = URL.createObjectURL(blobs[0]);
     _previewImg.src = url;
+
+    // 카운트 배지: 2장 이상일 때 표시
+    var countBadge = document.getElementById('photo-count-badge');
+    if (countBadge) {
+      if (blobs.length > 1) {
+        countBadge.textContent = blobs.length + '장 선택됨';
+        countBadge.hidden = false;
+      } else {
+        countBadge.hidden = true;
+      }
+    }
 
     // 공유하기 버튼만 표시 (Web Share API 파일 공유 → 미지원 시 링크 공유로 폴백)
     _shareBtn.hidden = false;
@@ -1119,19 +1121,24 @@ var PhotoShare = (function () {
       URL.revokeObjectURL(_previewImg.src);
       _previewImg.src = '';
     }
-    _resizedBlob = null;
+    _resizedBlobs = [];
     _historyPushed = false;
   }
 
-  // Web Share API 공유: 파일 공유 지원 시 사진 공유, 미지원 시 링크 공유로 폴백
+  // Web Share API 공유: 다중 파일 지원, 미지원 시 링크 공유로 폴백
   function shareViaWebAPI() {
-    if (!_resizedBlob) return;
-    var file = new File([_resizedBlob], 'wedding-photo.jpg', { type: 'image/jpeg' });
+    if (!_resizedBlobs || _resizedBlobs.length === 0) return;
+    if (!navigator.canShare) { shareViaNative(); return; }
 
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      // 파일 공유 지원 (iOS Safari, Android Chrome 등)
+    try {
+      var files = _resizedBlobs.map(function (blob, i) {
+        return new File([blob], 'wedding-photo-' + (i + 1) + '.jpg', { type: 'image/jpeg' });
+      });
+
+      if (!navigator.canShare({ files: files })) { shareViaNative(); return; }
+
       navigator.share({
-        files: [file],
+        files: files,
         title: '박상우 ♥ 박재은 결혼합니다',
         text: '2026년 11월 15일 결혼식에 초대합니다.'
       }).catch(function (err) {
@@ -1139,8 +1146,8 @@ var PhotoShare = (function () {
           shareViaNative();
         }
       });
-    } else {
-      // 파일 공유 미지원 → 링크 공유로 폴백
+    } catch (e) {
+      // File 생성 실패 등 예외 처리
       shareViaNative();
     }
   }
@@ -1226,28 +1233,54 @@ var PhotoShare = (function () {
 
   // 카메라/갤러리 트리거 (REQ-SHARE-001)
   function triggerCamera() {
-    _resizedBlob = null; // 이전 촬영 Blob 초기화
+    _resizedBlobs = []; // 이전 선택 Blob 초기화
     _input.value = '';
     _input.click();
   }
 
-  // 파일 선택 핸들러 (REQ-SHARE-002, REQ-SHARE-007)
+  // 파일 선택 핸들러 - 다중 선택 지원 (REQ-SHARE-002, REQ-SHARE-007)
   function handleFileSelect(e) {
-    var file = e.target.files && e.target.files[0];
-    if (!file) return;
+    var MAX_SIZE = 20 * 1024 * 1024; // 20MB per file
+    var MAX_FILES = 10;              // 최대 10장
+    var rawFiles = Array.from(e.target.files || []);
+    var files = rawFiles.filter(function (f) {
+      return f.type.startsWith('image/') && f.size <= MAX_SIZE;
+    }).slice(0, MAX_FILES);
 
-    // 이미지 파일만 허용
-    if (!file.type.startsWith('image/')) {
-      showToast('이미지 파일만 선택해주세요', 3000);
+    if (files.length === 0) {
+      var total = rawFiles.length;
+      if (total > MAX_FILES) {
+        showToast('최대 ' + MAX_FILES + '장까지 선택할 수 있습니다', 3000);
+      } else {
+        showToast(total > 0 ? '이미지 파일만 선택해주세요 (최대 20MB)' : '파일이 선택되지 않았습니다', 3000);
+      }
       return;
     }
 
-    resizeImage(file, function (blob) {
-      if (!blob) {
-        showToast('카메라에 접근할 수 없습니다', 3000);
-        return;
-      }
-      openPreviewModal(blob);
+    // 10장 초과 선택 시 안내 (일부는 처리)
+    if (rawFiles.length > MAX_FILES) {
+      showToast('최대 ' + MAX_FILES + '장만 처리합니다', 2000);
+    }
+
+    // 모든 파일을 순서 유지하며 리사이즈
+    var results = new Array(files.length);
+    var done = 0;
+    files.forEach(function (file, i) {
+      resizeImage(file, function (blob) {
+        results[i] = blob;
+        done++;
+        if (done === files.length) {
+          var blobs = results.filter(Boolean);
+          if (blobs.length === 0) {
+            showToast('이미지 처리에 실패했습니다', 3000);
+            return;
+          }
+          if (blobs.length < files.length) {
+            showToast((files.length - blobs.length) + '장을 처리하지 못했습니다', 2000);
+          }
+          openPreviewModal(blobs);
+        }
+      });
     });
   }
 
@@ -1263,9 +1296,6 @@ var PhotoShare = (function () {
     var kakaoDirectBtn = document.getElementById('share-kakao-btn');
 
     if (!_input || !cameraBtn) return;
-
-    // Web Share 지원 여부를 세션 초기에 한 번만 감지하여 캐시
-    _canShareFiles = detectCanShareFiles();
 
     initKakaoSDK();
 
