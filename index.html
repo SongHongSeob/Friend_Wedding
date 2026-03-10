@@ -308,6 +308,41 @@
 
   </section>
 
+  <!-- ========== Share Section ========== -->
+  <section id="share" class="section reveal">
+    <div class="container">
+      <h2 class="section__title">청첩장 공유하기</h2>
+      <p class="share__description">소중한 분들께 청첩장을 전달해 주세요</p>
+      <div class="share__actions">
+        <button id="share-camera-btn" class="share__btn" type="button" aria-label="사진 찍고 공유하기">
+          <span class="share__btn-icon">📷</span>
+          <span class="share__btn-text">사진 찍고 공유하기</span>
+        </button>
+        <button id="share-kakao-btn" class="share__btn share__btn--kakao" type="button" aria-label="카카오톡으로 청첩장 공유">
+          <span class="share__btn-icon">💬</span>
+          <span class="share__btn-text">카카오톡으로 공유</span>
+        </button>
+      </div>
+      <!-- 카메라/갤러리 접근용 숨김 파일 입력 -->
+      <input type="file" id="photo-input" accept="image/*" capture="environment" hidden aria-hidden="true">
+    </div>
+  </section>
+
+  <!-- Photo Preview Modal -->
+  <div id="photo-preview-modal" class="photo-preview" role="dialog" aria-label="사진 미리보기" aria-modal="true" hidden>
+    <div class="photo-preview__backdrop"></div>
+    <div class="photo-preview__content">
+      <button class="photo-preview__close" type="button" aria-label="닫기">&times;</button>
+      <div class="photo-preview__image-wrap">
+        <img id="photo-preview-img" class="photo-preview__img" src="" alt="촬영한 사진 미리보기">
+      </div>
+      <div class="photo-preview__actions">
+        <button id="photo-share-btn" class="photo-preview__action-btn photo-preview__action-btn--primary" type="button">공유하기</button>
+        <button id="photo-kakao-share-btn" class="photo-preview__action-btn photo-preview__action-btn--kakao" type="button" hidden>카카오톡으로 공유</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ========== 10. Footer Thanks ========== -->
   <footer class="footer-thanks">
     <p class="footer-thanks__text">감사합니다 &#128149;</p>
@@ -387,6 +422,9 @@
 
   <!-- Toast notification container -->
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- Kakao Share SDK (Maps SDK와 별도, Kakao 전역 공유) -->
+  <script src="https://t1.kakaocdn.net/kakaojs/v1/kakao.min.js"></script>
 
   <!-- Main script -->
   <script src="assets/js/main.js" defer></script>

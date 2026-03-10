@@ -903,14 +903,15 @@ const ScrollReveal = (() => {
 })();
 
 /* ===== Toast Utility ===== */
-function showToast(message) {
+// @MX:NOTE: [AUTO] duration 파라미터 추가 (기본값 2000ms, 공유 토스트는 3000ms 사용)
+function showToast(message, duration) {
   var toast = document.getElementById('toast');
   if (!toast) return;
 
   toast.textContent = message;
   toast.hidden = false;
 
-  // Force reflow then add visible class
+  // 강제 리플로우 후 visible 클래스 추가
   void toast.offsetWidth;
   toast.classList.add('is-visible');
 
@@ -919,7 +920,7 @@ function showToast(message) {
     setTimeout(function () {
       toast.hidden = true;
     }, 300);
-  }, 2000);
+  }, duration !== undefined ? duration : 2000);
 }
 
 /* ===== Kakao Map Init ===== */
@@ -1009,6 +1010,282 @@ const ZoomController = (() => {
   return { init: init };
 })();
 
+/* ===== Module 10: PhotoShare ===== */
+// @MX:NOTE: [AUTO] Web Share API + Kakao Share SDK 폴백 구현 모듈 (SPEC-SHARE-001)
+// @MX:SPEC: SPEC-SHARE-001
+var PhotoShare = (function () {
+  'use strict';
+
+  // 사이트 기본 URL (단일 관리)
+  var BASE_URL = 'https://songhongseob.github.io/friend-wedding/';
+
+  var _resizedBlob = null;
+  var _modal = null;
+  var _previewImg = null;
+  var _shareBtn = null;
+  var _kakaoShareBtn = null;
+  var _input = null;
+  var _historyPushed = false;
+  var _savedScrollY = 0;
+  // Web Share API 파일 공유 지원 여부 캐시 (세션 중 변하지 않음)
+  var _canShareFiles = null;
+
+  // Kakao Share SDK 초기화 (REQ-SHARE-009)
+  function initKakaoSDK() {
+    if (typeof Kakao === 'undefined') return;
+    if (!Kakao.isInitialized()) {
+      Kakao.init('ee2826711b4264015800d17421300f05');
+    }
+  }
+
+  // Web Share API 파일 공유 지원 여부 감지 - 세션 중 한 번만 실행 (REQ-SHARE-005)
+  function detectCanShareFiles() {
+    if (!navigator.canShare) return false;
+    try {
+      var testFile = new File([''], 'test.jpg', { type: 'image/jpeg' });
+      return navigator.canShare({ files: [testFile] });
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // 이미지 리사이즈: Canvas API로 최대 1920px, JPEG 0.85 (REQ-SHARE-002)
+  function resizeImage(file, callback) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var MAX = 1920;
+        var w = img.naturalWidth;
+        var h = img.naturalHeight;
+        if (w > MAX || h > MAX) {
+          var ratio = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) { callback(null); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function (blob) {
+          callback(blob);
+        }, 'image/jpeg', 0.85);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // 미리보기 모달 열기 (REQ-SHARE-003)
+  function openPreviewModal(blob) {
+    _resizedBlob = blob;
+    var url = URL.createObjectURL(blob);
+    _previewImg.src = url;
+
+    // REQ-SHARE-005: Web Share 미지원 시 Kakao 버튼 표시 (캐시된 결과 사용)
+    if (_canShareFiles) {
+      _shareBtn.hidden = false;
+      _kakaoShareBtn.hidden = true;
+    } else {
+      _shareBtn.hidden = true;
+      _kakaoShareBtn.hidden = false;
+    }
+
+    // 스크롤 잠금 (기존 GuestBook 패턴 재사용)
+    _savedScrollY = window.scrollY;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = '-' + _savedScrollY + 'px';
+    document.body.style.width = '100%';
+
+    _modal.hidden = false;
+
+    // Android 뒤로가기 처리
+    if (!_historyPushed) {
+      history.pushState({ photoPreview: true }, '');
+      _historyPushed = true;
+    }
+  }
+
+  // 미리보기 모달 닫기 (REQ-SHARE-003)
+  function closePreviewModal() {
+    _modal.hidden = true;
+
+    // 스크롤 잠금 해제
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo({ top: _savedScrollY, behavior: 'instant' });
+
+    if (_previewImg.src) {
+      URL.revokeObjectURL(_previewImg.src);
+      _previewImg.src = '';
+    }
+    _resizedBlob = null;
+    _historyPushed = false;
+  }
+
+  // Web Share API 공유 (REQ-SHARE-004, REQ-SHARE-006)
+  function shareViaWebAPI() {
+    if (!_resizedBlob) return;
+    var file = new File([_resizedBlob], 'wedding-photo.jpg', { type: 'image/jpeg' });
+    navigator.share({
+      files: [file],
+      title: '박상우 ♥ 박재은 결혼합니다',
+      text: '2026년 11월 15일 결혼식에 초대합니다. 청첩장을 확인해 주세요.'
+    }).catch(function (err) {
+      // REQ-SHARE-006: AbortError는 사용자 취소이므로 조용히 무시
+      if (err && err.name !== 'AbortError') {
+        copyToClipboard();
+      }
+    });
+  }
+
+  // Kakao Share 폴백 (REQ-SHARE-008)
+  function shareViaKakao() {
+    if (typeof Kakao === 'undefined' || !Kakao.Share) {
+      copyToClipboard();
+      return;
+    }
+    try {
+      Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: '박상우 ♥ 박재은 결혼합니다',
+          description: '2026년 11월 15일 일요일 오후 2시, 루클라비더화이트에서 두 사람이 하나가 됩니다.',
+          imageUrl: BASE_URL + 'assets/images/couple-main.jpg',
+          link: {
+            mobileWebUrl: BASE_URL,
+            webUrl: BASE_URL
+          }
+        },
+        buttons: [{
+          title: '청첩장 보기',
+          link: {
+            mobileWebUrl: BASE_URL,
+            webUrl: BASE_URL
+          }
+        }]
+      });
+    } catch (e) {
+      // REQ-SHARE-010: Kakao 실패 시 클립보드 복사
+      copyToClipboard();
+    }
+  }
+
+  // 클립보드 복사 폴백 (REQ-SHARE-010)
+  function copyToClipboard() {
+    var url = BASE_URL;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        showToast('링크가 복사되었습니다', 3000);
+      }).catch(function () {
+        fallbackCopy(url);
+      });
+    } else {
+      fallbackCopy(url);
+    }
+  }
+
+  function fallbackCopy(url) {
+    var ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showToast('링크가 복사되었습니다', 3000);
+    } catch (e) {
+      showToast('링크를 복사할 수 없습니다', 3000);
+    }
+    document.body.removeChild(ta);
+  }
+
+  // 카메라/갤러리 트리거 (REQ-SHARE-001)
+  function triggerCamera() {
+    _resizedBlob = null; // 이전 촬영 Blob 초기화
+    _input.value = '';
+    _input.click();
+  }
+
+  // 파일 선택 핸들러 (REQ-SHARE-002, REQ-SHARE-007)
+  function handleFileSelect(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    // 이미지 파일만 허용
+    if (!file.type.startsWith('image/')) {
+      showToast('이미지 파일만 선택해주세요', 3000);
+      return;
+    }
+
+    resizeImage(file, function (blob) {
+      if (!blob) {
+        showToast('카메라에 접근할 수 없습니다', 3000);
+        return;
+      }
+      openPreviewModal(blob);
+    });
+  }
+
+  function init() {
+    _modal = document.getElementById('photo-preview-modal');
+    if (!_modal) return; // DOM 없으면 조기 종료 (중복 init 방지)
+
+    _previewImg = document.getElementById('photo-preview-img');
+    _shareBtn = document.getElementById('photo-share-btn');
+    _kakaoShareBtn = document.getElementById('photo-kakao-share-btn');
+    _input = document.getElementById('photo-input');
+    var cameraBtn = document.getElementById('share-camera-btn');
+    var kakaoDirectBtn = document.getElementById('share-kakao-btn');
+
+    if (!_input || !cameraBtn) return;
+
+    // Web Share 지원 여부를 세션 초기에 한 번만 감지하여 캐시
+    _canShareFiles = detectCanShareFiles();
+
+    initKakaoSDK();
+
+    // 카메라 버튼 이벤트
+    cameraBtn.addEventListener('click', triggerCamera);
+
+    // 직접 카카오 공유 버튼 (사진 없이)
+    if (kakaoDirectBtn) {
+      kakaoDirectBtn.addEventListener('click', shareViaKakao);
+    }
+
+    // 파일 선택 이벤트
+    _input.addEventListener('change', handleFileSelect);
+
+    // 미리보기 모달 공유 버튼
+    _shareBtn.addEventListener('click', shareViaWebAPI);
+    _kakaoShareBtn.addEventListener('click', shareViaKakao);
+
+    // 닫기 버튼
+    var closeBtn = _modal.querySelector('.photo-preview__close');
+    if (closeBtn) closeBtn.addEventListener('click', closePreviewModal);
+
+    // 배경 클릭으로 닫기
+    var backdrop = _modal.querySelector('.photo-preview__backdrop');
+    if (backdrop) backdrop.addEventListener('click', closePreviewModal);
+
+    // Android 뒤로가기 처리 (REQ-SHARE-003) - _historyPushed는 closePreviewModal에서 리셋
+    window.addEventListener('popstate', function () {
+      if (!_modal.hidden) {
+        closePreviewModal();
+      }
+    });
+  }
+
+  return { init: init };
+})();
+
 /* ===== DOMContentLoaded Init ===== */
 document.addEventListener('DOMContentLoaded', function () {
   ScrollReveal.init();
@@ -1021,5 +1298,6 @@ document.addEventListener('DOMContentLoaded', function () {
   AccountCopy.init();
   Collapsible.init();
   GuestBook.init();
+  PhotoShare.init();
   initKakaoMap();
 });
