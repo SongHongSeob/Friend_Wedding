@@ -135,7 +135,7 @@ const Lightbox = (() => {
   function open(index) {
     currentIndex = index;
     updateImage();
-    savedScrollY = window.scrollY;
+    savedScrollY = Math.round(window.scrollY);
     document.body.style.position = 'fixed';
     document.body.style.top = '-' + savedScrollY + 'px';
     document.body.style.width = '100%';
@@ -147,7 +147,9 @@ const Lightbox = (() => {
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.width = '';
-    window.scrollTo({ top: savedScrollY, behavior: 'instant' });
+    document.documentElement.style.scrollBehavior = 'auto';
+    window.scrollTo(0, savedScrollY);
+    document.documentElement.style.scrollBehavior = '';
   }
 
   function prev() {
@@ -1140,7 +1142,7 @@ var PhotoShare = (function () {
       navigator.share({
         files: files,
         title: '박상우 ♥ 박재은 결혼합니다',
-        text: '2026년 11월 15일 결혼식에 초대합니다.'
+        text: '박상우 ♥ 박재은 결혼식 스냅샷을 보냅니다.'
       }).catch(function (err) {
         if (err && err.name !== 'AbortError') {
           shareViaNative();
