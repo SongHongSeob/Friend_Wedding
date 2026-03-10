@@ -1,7 +1,7 @@
 ---
 id: SPEC-SHARE-001
 version: 1.0.0
-status: Planned
+status: Implemented
 created: 2026-03-10
 updated: 2026-03-10
 author: 9bit
