@@ -599,6 +599,10 @@ a:focus-visible {
   background-color: var(--color-border);
 }
 
+.map__container--naver {
+  margin-top: 1rem;
+}
+
 .map__fallback {
   text-align: center;
   padding: 2rem 1rem;

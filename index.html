@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ee2826711b4264015800d17421300f05"></script>
+  <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=2jzt72meco"></script>
   <script src="script.js?v=9"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -174,6 +175,10 @@
 
       <!-- ========== 7. Kakao Map ========== -->
       <div id="kakao-map" class="map__container"></div>
+
+      <!-- ========== 7-1. Naver Map ========== -->
+      <div id="naver-map" class="map__container map__container--naver"></div>
+
       <div id="map-fallback" class="map__fallback" hidden>
         <p class="map__fallback-address">서울 강남구 논현로 742</p>
         <div class="map__fallback-links">

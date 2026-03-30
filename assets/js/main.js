@@ -925,6 +925,33 @@ function showToast(message, duration) {
   }, duration !== undefined ? duration : 2000);
 }
 
+/* ===== Naver Map Init ===== */
+function initNaverMap() {
+  var container = document.getElementById('naver-map');
+  if (!container) return;
+
+  // SDK 로드 여부 확인
+  if (typeof naver === 'undefined' || typeof naver.maps === 'undefined') {
+    console.warn('[NaverMap] SDK가 로드되지 않았습니다. Client ID와 서비스 URL을 확인하세요.');
+    container.hidden = true;
+    return;
+  }
+
+  try {
+    var map = new naver.maps.Map('naver-map', {
+      center: new naver.maps.LatLng(CONFIG.venue.lat, CONFIG.venue.lng),
+      zoom: 16
+    });
+
+    new naver.maps.Marker({
+      position: new naver.maps.LatLng(CONFIG.venue.lat, CONFIG.venue.lng),
+      map: map
+    });
+  } catch (e) {
+    console.error('[NaverMap] 초기화 오류:', e);
+  }
+}
+
 /* ===== Kakao Map Init ===== */
 function initKakaoMap() {
   var container = document.getElementById('kakao-map');
@@ -1349,4 +1376,5 @@ document.addEventListener('DOMContentLoaded', function () {
   GuestBook.init();
   PhotoShare.init();
   initKakaoMap();
+  initNaverMap();
 });
